@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+layers=$(cd "$1" && pwd)
+: "${BP_PNPM_FILTER:?Set BP_PNPM_FILTER}"
+tool_layer="$layers/corepack"
+store_layer="$layers/store"
+mkdir -p "$tool_layer" "$store_layer"
+npm install --prefix "$tool_layer" --no-audit --no-fund corepack@0.36.0
+cat > "$tool_layer.toml" <<'LAYER'
+[types]
+build = true
+cache = true
+LAYER
+cat > "$store_layer.toml" <<'LAYER'
+[types]
+cache = true
+LAYER
+export PATH="$tool_layer/node_modules/.bin:$PATH" COREPACK_HOME="$tool_layer/home" CI=true
+corepack pnpm --filter "${BP_PNPM_FILTER}..." install --store-dir "$store_layer" --frozen-lockfile
+corepack pnpm --filter "$BP_PNPM_FILTER" build
+corepack pnpm --filter "$BP_PNPM_FILTER" list --depth -1 --json > "$layers/selected.json"
+find . -name node_modules -prune -exec rm -rf {} +
+node - "$layers/launch.toml" "$layers/selected.json" <<'NODE'
+const fs = require('fs');
+const packages = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+if (packages.length !== 1) throw new Error('BP_PNPM_FILTER must select exactly one package');
+const pkg = JSON.parse(fs.readFileSync(packages[0].path + '/package.json', 'utf8'));
+const entries = Object.entries(pkg.scripts || {}).filter(([name]) => name.startsWith('buildpack:'));
+if (!entries.some(([name]) => name === 'buildpack:main')) throw new Error('Missing buildpack:main script');
+const processes = entries.map(([name, script]) => {
+  const type = name.slice('buildpack:'.length);
+  if (!/^[a-z][a-z0-9-]*$/.test(type) || !/^node [a-zA-Z0-9_./-]+$/.test(script)) throw new Error(`Invalid direct process: ${name}=${script}`);
+  const args = script.split(' ');
+  return `[[processes]]\ntype = ${JSON.stringify(type)}\ncommand = [${args.map(JSON.stringify).join(', ')}]\ndefault = ${type === 'main'}\n`;
+});
+fs.writeFileSync(process.argv[2], processes.join('\n'));
+NODE

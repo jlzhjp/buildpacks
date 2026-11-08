@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Check scripts and buildpack metadata
         run: |
-          bash -n pnpm-assets/bin/detect pnpm-assets/bin/build
+          bash -n pnpm-assets/bin/detect pnpm-assets/bin/build node-app/bin/detect node-app/bin/build
           python3 tests/check.py
 
   publish:
@@ -40,7 +40,7 @@ jobs:
           import tomllib
 
           expected = os.environ["RELEASE_TAG"].removeprefix("v")
-          for component in ("pnpm-assets", "go-web"):
+          for component in ("pnpm-assets", "go-web", "node-app"):
               with pathlib.Path(component, "buildpack.toml").open("rb") as file:
                   version = tomllib.load(file)["buildpack"]["version"]
               if version != expected:
@@ -55,11 +55,11 @@ jobs:
           GHCR_USERNAME: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
-      - name: Package and publish both buildpacks
+      - name: Package and publish buildpacks
         run: |
           set -euo pipefail
           registry="ghcr.io/${GITHUB_REPOSITORY,,}"
-          for component in pnpm-assets go-web; do
+          for component in pnpm-assets go-web node-app; do
             version=$(python3 -c 'import sys, tomllib; print(tomllib.load(open(sys.argv[1], "rb"))["buildpack"]["version"])' "$component/buildpack.toml")
             pack buildpack package "$registry/$component:$version" \
               --config "$component/package.toml" \

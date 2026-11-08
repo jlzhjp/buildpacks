@@ -1,0 +1,7 @@
+api = "0.10"
+[buildpack]
+id = "shared/node-app"
+version = "0.1.2"
+name = "pnpm workspace application"
+[[targets]]
+os = "linux"
