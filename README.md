@@ -2,7 +2,7 @@
 
 Two reusable Cloud Native Buildpacks for Go applications that embed frontend assets:
 
-- `shared/pnpm-assets`: installs the exact pnpm version from `package.json`, installs locked dependencies including build tools, runs a package script, and removes `node_modules`. Its tool and download layers are cached, with `launch = false`.
+- `shared/pnpm-assets`: installs Corepack separately and uses it to select pnpm from `package.json`, installs locked dependencies including build tools, runs a package script, and removes `node_modules`. Corepack, its package-manager downloads, and dependency layers are cached, with `launch = false`.
 - `shared/go-web`: composes Paketo Node Engine, pnpm-assets, and Paketo Go. Node and pnpm stay build-only; Paketo selects and launches the Go binary.
 
 ## Build and use locally

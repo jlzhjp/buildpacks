@@ -17,7 +17,7 @@ subprocess.run(
     [
         "docker", "run", "--rm", "--entrypoint", "/bin/sh", image, "-c",
         "test ! -d /layers/paketo-buildpacks_node-engine/node && "
-        "test ! -d /layers/shared_pnpm-assets/pnpm",
+        "test ! -d /layers/shared_pnpm-assets/corepack",
     ],
     check=True,
 )

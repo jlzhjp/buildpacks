@@ -2,24 +2,19 @@
 set -euo pipefail
 
 layers=$(cd "$1" && pwd)
-pnpm_version=$(node --input-type=commonjs -e '
-  const fs = require("node:fs");
-  const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
-  const match = /^pnpm@(\d+\.\d+\.\d+)(?:\+sha(?:224|256|384|512)\.[a-fA-F0-9]+)?$/.exec(pkg.packageManager || "");
-  if (!match) throw new Error("Set packageManager to an exact pnpm version, e.g. pnpm@12.18.0");
-  const script = process.env.BP_PNPM_BUILD_SCRIPT || "build";
-  if (!pkg.scripts?.[script]) throw new Error(`Missing package script: ${script}`);
-  process.stdout.write(match[1]);
-')
+node --input-type=commonjs -e '
+  const pkg = require("./package.json");
+  if (!pkg.packageManager?.startsWith("pnpm@")) throw new Error("Set packageManager to an exact pnpm version");
+'
 
-tool_layer="$layers/pnpm"
+tool_layer="$layers/corepack"
 cache_layer="$layers/store"
 node_version=$(node --version)
-cache_key="$pnpm_version $node_version $(uname -m)"
+cache_key="corepack@0.35.0 $node_version $(uname -m)"
 if [[ ! -f "$tool_layer/version" ]] || [[ "$(cat "$tool_layer/version")" != "$cache_key" ]]; then
   rm -rf "$tool_layer"
   mkdir -p "$tool_layer"
-  npm install --prefix "$tool_layer" --no-audit --no-fund "pnpm@$pnpm_version"
+  npm install --prefix "$tool_layer" --no-audit --no-fund corepack@0.35.0
   printf '%s\n' "$cache_key" > "$tool_layer/version"
 fi
 mkdir -p "$cache_layer"
@@ -37,9 +32,10 @@ launch = false
 LAYER
 
 export PATH="$tool_layer/node_modules/.bin:$PATH"
+export COREPACK_HOME="$tool_layer/home"
 export CI=true
-pnpm install --store-dir "$cache_layer" --frozen-lockfile --prod=false
-pnpm run "${BP_PNPM_BUILD_SCRIPT:-build}"
+corepack pnpm install --store-dir "$cache_layer" --frozen-lockfile --prod=false
+corepack pnpm run "${BP_PNPM_BUILD_SCRIPT:-build}"
 
 # Only generated assets are needed by the subsequent Go build.
 find . -name node_modules -prune -exec rm -rf {} +
