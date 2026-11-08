@@ -1,0 +1,9 @@
+api = "0.10"
+
+[buildpack]
+id = "shared/pnpm-assets"
+version = "0.1.0"
+name = "pnpm frontend assets"
+
+[[targets]]
+os = "linux"

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+[[ -f package.json && -f pnpm-lock.yaml ]] || exit 100
+cat > "$2" <<'PLAN'
+[[requires]]
+name = "node"
+[requires.metadata]
+build = true
+launch = false
+
+[[requires]]
+name = "npm"
+[requires.metadata]
+build = true
+launch = false
+PLAN
