@@ -30,6 +30,22 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PYCODE'
+          import os
+          import pathlib
+          import tomllib
+
+          expected = os.environ["RELEASE_TAG"].removeprefix("v")
+          for component in ("pnpm-assets", "go-web"):
+              with pathlib.Path(component, "buildpack.toml").open("rb") as file:
+                  version = tomllib.load(file)["buildpack"]["version"]
+              if version != expected:
+                  raise SystemExit(f"{component} version {version} does not match release tag {os.environ['RELEASE_TAG']}")
+          PYCODE
       - name: Install pack
         uses: buildpacks/github-actions/setup-pack@8fe5c9d7f5a3fa22d4b7cc7d50ba8ebd7eddf414 # v5.12.5
         with:
