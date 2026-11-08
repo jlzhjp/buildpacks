@@ -12,8 +12,8 @@ package = tomllib.loads((root / "go-web/package.toml").read_text())
 group = composite["order"][0]["group"]
 assert group[1]["id"] == component["buildpack"]["id"]
 assert group[1]["version"] == component["buildpack"]["version"]
-assert package["dependencies"][0]["uri"].endswith(":" + group[0]["version"])
-assert package["dependencies"][2]["uri"].endswith(":" + group[2]["version"])
+assert package["dependencies"][0]["uri"].endswith("/node-engine-" + group[0]["version"] + ".cnb")
+assert package["dependencies"][2]["uri"].endswith("/go-" + group[2]["version"] + ".cnb")
 
 with tempfile.TemporaryDirectory() as directory:
     app = pathlib.Path(directory)

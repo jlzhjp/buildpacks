@@ -2,10 +2,10 @@
 uri = "."
 
 [[dependencies]]
-uri = "docker://paketobuildpacks/node-engine:8.12.0"
+uri = "https://github.com/paketo-buildpacks/node-engine/releases/download/v8.12.0/node-engine-8.12.0.cnb"
 
 [[dependencies]]
 uri = "../pnpm-assets"
 
 [[dependencies]]
-uri = "docker://paketobuildpacks/go:4.23.3"
+uri = "https://github.com/paketo-buildpacks/go/releases/download/v4.23.3/go-4.23.3.cnb"
