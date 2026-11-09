@@ -19,9 +19,14 @@ export PATH="$tool_layer/node_modules/.bin:$PATH" COREPACK_HOME="$tool_layer/hom
 corepack pnpm --filter "${BP_PNPM_FILTER}..." install --store-dir "$store_layer" --frozen-lockfile
 corepack pnpm --filter "$BP_PNPM_FILTER" build
 corepack pnpm --filter "$BP_PNPM_FILTER" list --depth -1 --json > "$layers/selected.json"
-find . -name node_modules -prune -exec rm -rf {} +
-node - "$layers/launch.toml" "$layers/selected.json" <<'NODE'
+corepack pnpm --recursive list --depth -1 --json > "$layers/workspace.json"
+node - "$layers/launch.toml" "$layers/selected.json" "$layers/workspace.json" <<'NODE'
 const fs = require('fs');
+const path = require('path');
+const workspace = JSON.parse(fs.readFileSync(process.argv[4], 'utf8'));
+for (const dir of new Set([process.cwd(), ...workspace.map(pkg => pkg.path)])) {
+  fs.rmSync(path.join(dir, 'node_modules'), { recursive: true, force: true });
+}
 const packages = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
 if (packages.length !== 1) throw new Error('BP_PNPM_FILTER must select exactly one package');
 const pkg = JSON.parse(fs.readFileSync(packages[0].path + '/package.json', 'utf8'));
