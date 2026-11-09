@@ -25,7 +25,7 @@ builder = "paketobuildpacks/ubuntu-resolute-builder-buildpackless"
 exclude = [".git", "node_modules", "static", "dist"]
 
 [[io.buildpacks.group]]
-uri = "docker://shared/go-web:0.1.2"
+uri = "docker://shared/go-web:0.1.3"
 
 [[io.buildpacks.build.env]]
 name = "BP_NODE_VERSION"
@@ -59,7 +59,7 @@ docker login ghcr.io
 just publish ghcr.io/your-org
 ```
 
-Applications then reference `docker://ghcr.io/your-org/go-web:0.1.2`. Publishing the component separately also lets other pipelines reuse it with a Node provider. Publishing requires registry authorization; the recipes do not create repositories or credentials.
+Applications then reference `docker://ghcr.io/your-org/go-web:0.1.3`. Publishing the component separately also lets other pipelines reuse it with a Node provider. Publishing requires registry authorization; the recipes do not create repositories or credentials.
 
 After building an application image, run `just check-image my-app` to verify the Go runtime layer is exported and Node/pnpm layers are absent. Smoke-test the application's own endpoints separately.
 
@@ -69,12 +69,12 @@ Dependency versions are pinned in `go-web/buildpack.toml` and `go-web/package.to
 
 The workflow in `.github/workflows/publish.yml` checks pull requests and pushes to `main`. Pushing a Git tag starting with `v` triggers packaging and publishing. Each image tag comes directly from its own `buildpack.toml` version, independently of the Git tag:
 
-- `ghcr.io/<owner>/<repository>/pnpm-assets:0.1.2`
-- `ghcr.io/<owner>/<repository>/go-web:0.1.2`
+- `ghcr.io/<owner>/<repository>/pnpm-assets:0.1.3`
+- `ghcr.io/<owner>/<repository>/go-web:0.1.3`
 
 The owner/repository is derived automatically and lowercased. Authentication uses the repository's `GITHUB_TOKEN` with `packages: write`; no personal access token is needed. OCI source labels link the packages to the repository.
 
-Update component versions and composite references together before the next release. The Git tag must match both buildpack versions. Consumers reference `docker://ghcr.io/<owner>/<repository>/go-web:0.1.2`. Set GHCR package visibility to public if consumers should pull without registry authentication.
+Update component versions and composite references together before the next release. The Git tag must match both buildpack versions. Consumers reference `docker://ghcr.io/<owner>/<repository>/go-web:0.1.3`. Set GHCR package visibility to public if consumers should pull without registry authentication.
 
 ## Node workspace applications
 
