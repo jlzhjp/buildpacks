@@ -19,24 +19,4 @@ export PATH="$tool_layer/node_modules/.bin:$PATH" COREPACK_HOME="$tool_layer/hom
 corepack pnpm --filter "${BP_PNPM_FILTER}..." install --store-dir "$store_layer" --frozen-lockfile
 corepack pnpm --filter "$BP_PNPM_FILTER" build
 corepack pnpm --filter "$BP_PNPM_FILTER" list --depth -1 --json > "$layers/selected.json"
-corepack pnpm --recursive list --depth -1 --json > "$layers/workspace.json"
-node - "$layers/launch.toml" "$layers/selected.json" "$layers/workspace.json" <<'NODE'
-const fs = require('fs');
-const path = require('path');
-const workspace = JSON.parse(fs.readFileSync(process.argv[4], 'utf8'));
-for (const dir of new Set([process.cwd(), ...workspace.map(pkg => pkg.path)])) {
-  fs.rmSync(path.join(dir, 'node_modules'), { recursive: true, force: true });
-}
-const packages = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-if (packages.length !== 1) throw new Error('BP_PNPM_FILTER must select exactly one package');
-const pkg = JSON.parse(fs.readFileSync(packages[0].path + '/package.json', 'utf8'));
-const entries = Object.entries(pkg.scripts || {}).filter(([name]) => name.startsWith('buildpack:'));
-if (!entries.some(([name]) => name === 'buildpack:main')) throw new Error('Missing buildpack:main script');
-const processes = entries.map(([name, script]) => {
-  const type = name.slice('buildpack:'.length);
-  if (!/^[a-z][a-z0-9-]*$/.test(type) || !/^node [a-zA-Z0-9_./-]+$/.test(script)) throw new Error(`Invalid direct process: ${name}=${script}`);
-  const args = script.split(' ');
-  return `[[processes]]\ntype = ${JSON.stringify(type)}\ncommand = [${args.map(JSON.stringify).join(', ')}]\ndefault = ${type === 'main'}\n`;
-});
-fs.writeFileSync(process.argv[2], processes.join('\n'));
-NODE
+node "$(dirname "$0")/../lib/prepare-runtime.cjs" "$layers/launch.toml" "$layers/selected.json"

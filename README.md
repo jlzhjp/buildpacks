@@ -67,15 +67,25 @@ Dependency versions are pinned in `go-web/buildpack.toml` and `go-web/package.to
 
 ## GitHub Actions releases
 
-The workflow in `.github/workflows/publish.yml` checks pull requests and pushes to `main`. Pushing a Git tag starting with `v` triggers packaging and publishing. Each image tag comes directly from its own `buildpack.toml` version, independently of the Git tag:
+The workflow in `.github/workflows/publish.yml` checks pull requests and pushes to `main`. Push a tag in the form `<buildpack>/v<version>` to publish that buildpack, for example `node-app/v0.1.4`. The version must match its `buildpack.toml`. Each image tag comes from its own `buildpack.toml` version. For example:
 
 - `ghcr.io/<owner>/<repository>/pnpm-assets:0.1.3`
 - `ghcr.io/<owner>/<repository>/go-web:0.1.3`
+- `ghcr.io/<owner>/<repository>/node-app:0.1.4`
 
 The owner/repository is derived automatically and lowercased. Authentication uses the repository's `GITHUB_TOKEN` with `packages: write`; no personal access token is needed. OCI source labels link the packages to the repository.
 
-Update component versions and composite references together before the next release. The Git tag must match both buildpack versions. Consumers reference `docker://ghcr.io/<owner>/<repository>/go-web:0.1.3`. Set GHCR package visibility to public if consumers should pull without registry authentication.
+Update component versions and composite references together when they change. A release tag publishes only the named component. Consumers reference `docker://ghcr.io/<owner>/<repository>/go-web:0.1.3`. Set GHCR package visibility to public if consumers should pull without registry authentication.
 
 ## Node workspace applications
 
-`shared/node-app` selects a package using `BP_PNPM_FILTER`, installs its workspace dependency closure, and builds it. Define `buildpack:main` and optional `buildpack:<name>` scripts as direct `node <path>` commands relative to the workspace root. The main process is the default. Include Paketo Node Engine before this buildpack. Node and required system libraries must be available at launch.
+`shared/node-app` selects a package using `BP_PNPM_FILTER`, installs its workspace dependency closure, and builds it. Define `buildpack:main` and optional `buildpack:<name>` scripts as direct `node <path>` commands relative to the workspace root. The main process is the default. Declare `buildpack.include` in the selected package's `package.json` as an array of files or directories to retain, also relative to the workspace root. Each process entrypoint must be included. All other application files are removed after the build, so the included paths must contain the complete runtime, including assets, dependencies, and any needed package metadata. For example:
+
+```json
+{
+  "scripts": { "buildpack:main": "node apps/server/dist/main.mjs" },
+  "buildpack": { "include": ["apps/server/dist"] }
+}
+```
+
+Include Paketo Node Engine before this buildpack. Node and required system libraries must be available at launch. Place any buildpacks that need application source before `shared/node-app`.
